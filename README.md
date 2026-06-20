@@ -1,4 +1,586 @@
-# Cervical-cancer-risk-assessement-with-ML
-Clinical decision-support tool to assist physicians in assessing cervical cancer risk among patients based on medical history and behavioral factors
+# Cervical Cancer Risk Assessment with Machine Learning
 
-[![Streamlit CI/CD](https://github.com/Mar-Dev-One/Cervical-cancer-risk-assessement-with-ML/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Mar-Dev-One/Cervical-cancer-risk-assessement-with-ML/actions/workflows/ci-cd.yml)
+## Présentation générale
+
+Ce projet présente un prototype académique d’aide à l’évaluation du risque de cancer du col de l’utérus à partir de données médicales et comportementales.
+
+L’objectif est de mettre en place une chaîne de machine learning capable de préparer les données, d’entraîner plusieurs modèles de classification, de comparer leurs performances et d’expliquer les résultats à l’aide de méthodes d’interprétabilité.
+
+Le dépôt inclut également une application Streamlit permettant à l’utilisateur de saisir des informations individuelles et d’obtenir une estimation exploratoire du niveau de risque.
+
+Ce travail a été réalisé dans un cadre académique, lors d’une Coding Week, avec une finalité d’apprentissage autour de la data science appliquée, du machine learning supervisé, de l’interprétabilité des modèles et du développement d’une interface interactive.
+
+---
+
+## Avertissement important
+
+Ce projet est un prototype académique et exploratoire.
+
+Il ne constitue pas un outil médical validé, ne fournit pas de diagnostic clinique et ne doit pas être utilisé pour prendre une décision médicale réelle.
+
+Toute interprétation liée à la santé doit être réalisée par un professionnel de santé qualifié. Les prédictions produites par l’application doivent uniquement être comprises comme des résultats statistiques issus d’un modèle entraîné sur un jeu de données donné.
+
+---
+
+## Objectifs du projet
+
+Les objectifs principaux sont les suivants :
+
+- préparer un jeu de données médical comportant des facteurs de risque ;
+- traiter les valeurs manquantes et standardiser les données ;
+- construire une variable cible liée au résultat de biopsie ;
+- gérer le déséquilibre des classes avec SMOTE ;
+- entraîner plusieurs modèles de classification supervisée ;
+- comparer les résultats de modèles comme Random Forest, SVM et XGBoost ;
+- sauvegarder les modèles entraînés pour une utilisation dans l’application ;
+- développer une interface Streamlit pour réaliser une prédiction exploratoire ;
+- utiliser SHAP pour interpréter les prédictions et identifier les variables influentes.
+
+---
+
+## Données utilisées
+
+Le projet repose sur un jeu de données tabulaire contenant des informations médicales et comportementales.
+
+Le fichier brut est stocké dans :
+
+```text
+data/risk_factors_cervical_cancer.csv
+```
+
+Le fichier prétraité est stocké dans :
+
+```text
+data/output.csv
+```
+
+Le dataset brut contient :
+
+```text
+858 observations
+36 variables initiales
+Variable cible : Biopsy
+```
+
+Après prétraitement, le fichier utilisé par les modèles contient :
+
+```text
+858 observations
+22 variables
+```
+
+Exemples de variables utilisées :
+
+- Age
+- Number of sexual partners
+- First sexual intercourse
+- Num of pregnancies
+- Smokes
+- Smokes years
+- Hormonal Contraceptives
+- Hormonal Contraceptives years
+- IUD
+- STDs
+- Dx Cancer
+- Dx CIN
+- Dx HPV
+- Hinselmann
+- Schiller
+- Citology
+- Biopsy
+
+La variable cible est :
+
+```text
+Biopsy
+```
+
+Elle indique le résultat associé à la biopsie dans le jeu de données.
+
+---
+
+## Problématique
+
+La problématique traitée dans ce projet est la suivante :
+
+```text
+Comment utiliser des modèles de machine learning supervisé pour estimer un risque exploratoire à partir de facteurs médicaux et comportementaux, tout en rendant les prédictions plus interprétables ?
+```
+
+---
+
+## Architecture du projet
+
+Le projet suit une architecture simple et structurée.
+
+```text
+Données brutes
+        |
+        v
+Prétraitement des données
+        |
+        v
+Gestion des valeurs manquantes
+        |
+        v
+Sélection et nettoyage des variables
+        |
+        v
+Standardisation des données
+        |
+        v
+Gestion du déséquilibre avec SMOTE
+        |
+        v
+Entraînement des modèles ML
+        |
+        v
+Sauvegarde des modèles
+        |
+        v
+Explication avec SHAP
+        |
+        v
+Application Streamlit
+```
+
+---
+
+## Fonctionnement du pipeline
+
+### 1. Prétraitement des données
+
+Le prétraitement est réalisé dans :
+
+```text
+src/ProAndTrain/dataProcessing.py
+```
+
+Les principales étapes sont :
+
+- suppression de certaines colonnes peu exploitables ;
+- conversion des variables en format numérique ;
+- remplacement des valeurs manquantes ;
+- imputation de certaines valeurs à partir de groupes d’âge ;
+- imputation de variables catégorielles par le mode ;
+- conservation des variables utiles pour l’entraînement ;
+- export du dataset nettoyé dans `data/output.csv`.
+
+Le fichier obtenu est ensuite utilisé par les modèles et par l’application Streamlit.
+
+---
+
+### 2. Entraînement des modèles
+
+La logique de modélisation est définie dans :
+
+```text
+src/ProAndTrain/model.py
+```
+
+Les modèles disponibles sont :
+
+- Random Forest Classifier ;
+- Support Vector Machine ;
+- XGBoost Classifier ;
+- CatBoost Classifier, prévu dans le code mais non sauvegardé dans le dépôt actuel.
+
+Les modèles sauvegardés dans le dépôt sont :
+
+```text
+genModels/random_forest.pkl
+genModels/svm.pkl
+genModels/xgboost.pkl
+```
+
+Le script d’entraînement est :
+
+```text
+src/genModels.py
+```
+
+Il réalise les étapes suivantes :
+
+- chargement du dataset ;
+- prétraitement des données ;
+- séparation des variables explicatives et de la cible ;
+- standardisation avec `StandardScaler` ;
+- séparation train/test ;
+- rééquilibrage des classes avec SMOTE ;
+- entraînement du modèle choisi ;
+- sauvegarde du modèle au format `.pkl`.
+
+---
+
+## Gestion du déséquilibre des classes
+
+Le dataset présente un déséquilibre important entre les classes de la variable cible `Biopsy`.
+
+Dans le fichier prétraité :
+
+```text
+Classe 0 : 803 observations
+Classe 1 : 55 observations
+```
+
+Pour limiter l’impact de ce déséquilibre sur l’apprentissage, le projet utilise SMOTE afin de suréchantillonner la classe minoritaire pendant l’entraînement.
+
+Cette étape est importante dans un problème de classification où la classe positive est peu représentée.
+
+---
+
+## Application Streamlit
+
+L’application principale est définie dans :
+
+```text
+src/main.py
+```
+
+Elle permet à l’utilisateur de saisir plusieurs informations :
+
+- âge ;
+- nombre de partenaires ;
+- âge au premier rapport ;
+- nombre de grossesses ;
+- tabagisme ;
+- contraception hormonale ;
+- utilisation d’un DIU ;
+- antécédents d’IST ;
+- antécédents de diagnostics médicaux ;
+- résultats liés à certains examens.
+
+L’utilisateur peut sélectionner un modèle de prédiction parmi :
+
+- Random Forest Classifier ;
+- XGBoost Classifier ;
+- SVM.
+
+L’application retourne ensuite une estimation exploratoire :
+
+```text
+Low Risk Assessment
+```
+
+ou
+
+```text
+Elevated Risk Assessment
+```
+
+L’interface contient également un avertissement indiquant que l’outil ne remplace pas un avis médical.
+
+---
+
+## Interprétabilité avec SHAP
+
+Le projet utilise SHAP afin d’expliquer les prédictions des modèles et d’identifier les variables les plus influentes.
+
+Le script associé est :
+
+```text
+src/ProAndTrain/SHAPexpls.py
+```
+
+Les résultats sont stockés dans :
+
+```text
+shap_results/
+```
+
+Les visualisations générées incluent :
+
+- SHAP summary plot ;
+- SHAP bar plot ;
+- SHAP decision plot ;
+- SHAP force plots ;
+- SHAP dependence plots.
+
+Exemples de fichiers générés :
+
+```text
+shap_results/shap_summary_plot.png
+shap_results/shap_bar_plot.png
+shap_results/shap_decision_plot.png
+shap_results/shap_force_plot_example_1.png
+shap_results/feature_importance.csv
+```
+
+Les variables les plus influentes selon le fichier d’importance SHAP fourni sont notamment :
+
+```text
+Schiller
+Num of pregnancies
+Number of sexual partners
+First sexual intercourse
+Hormonal Contraceptives years
+Hinselmann
+Hormonal Contraceptives
+Citology
+IUD
+Age
+```
+
+Ces résultats doivent être interprétés avec prudence, car ils dépendent du dataset, du modèle utilisé et du protocole d’entraînement.
+
+---
+
+## Structure du dépôt
+
+```text
+.
+├── data/
+│   ├── risk_factors_cervical_cancer.csv
+│   └── output.csv
+│
+├── genModels/
+│   ├── random_forest.pkl
+│   ├── svm.pkl
+│   └── xgboost.pkl
+│
+├── shap_results/
+│   ├── feature_importance.csv
+│   ├── shap_bar_plot.png
+│   ├── shap_decision_plot.png
+│   ├── shap_summary_plot.png
+│   ├── shap_force_plot_example_1.png
+│   ├── shap_force_plot_example_2.png
+│   ├── shap_force_plot_example_3.png
+│   └── shap_dependence_-.png
+│
+├── src/
+│   ├── main.py
+│   ├── genModels.py
+│   └── ProAndTrain/
+│       ├── dataProcessing.py
+│       ├── model.py
+│       ├── SHAPexpls.py
+│       └── momory_opt.py
+│
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml
+│
+├── .devcontainer/
+│   └── devcontainer.json
+│
+├── requirements.txt
+├── Doxyfile
+├── LICENSE
+└── README.md
+```
+
+---
+
+## Installation
+
+### 1. Cloner le dépôt
+
+```bash
+git clone https://github.com/Essalmy7/Cervical-cancer-risk-assessement-with-ML.git
+cd Cervical-cancer-risk-assessement-with-ML
+```
+
+### 2. Créer un environnement virtuel
+
+```bash
+python -m venv venv
+```
+
+Sous Windows :
+
+```bash
+venv\Scripts\activate
+```
+
+Sous Linux ou macOS :
+
+```bash
+source venv/bin/activate
+```
+
+### 3. Installer les dépendances
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Lancer l’application
+
+Depuis la racine du projet :
+
+```bash
+streamlit run src/main.py
+```
+
+L’application s’ouvre ensuite dans le navigateur.
+
+---
+
+## Réentraîner un modèle
+
+Le script d’entraînement se trouve dans :
+
+```text
+src/genModels.py
+```
+
+Selon la structure actuelle du projet, le script utilise des chemins relatifs. Il est donc recommandé de l’exécuter depuis le dossier `src`.
+
+```bash
+cd src
+python genModels.py
+```
+
+Le modèle entraîné est ensuite sauvegardé dans :
+
+```text
+genModels/
+```
+
+---
+
+## Générer les explications SHAP
+
+Le script SHAP peut être utilisé pour générer des visualisations d’interprétabilité.
+
+Exemple :
+
+```bash
+python src/ProAndTrain/SHAPexpls.py --model genModels/xgboost.pkl --data data/output.csv --output shap_results --model-type xgboost
+```
+
+Les figures sont sauvegardées dans :
+
+```text
+shap_results/
+```
+
+---
+
+## Dépendances principales
+
+Les principales bibliothèques utilisées sont :
+
+- pandas
+- numpy
+- scikit-learn
+- imbalanced-learn
+- xgboost
+- shap
+- streamlit
+- matplotlib
+- seaborn
+- plotly
+- joblib
+
+---
+
+## Résultats et interprétation
+
+Le projet permet de produire :
+
+- un dataset nettoyé et exploitable ;
+- des modèles de classification sauvegardés ;
+- une interface Streamlit de prédiction exploratoire ;
+- des visualisations SHAP pour interpréter les résultats ;
+- une analyse de l’importance des variables.
+
+Les résultats doivent être interprétés dans un cadre académique uniquement.
+
+Le projet montre principalement la capacité à :
+
+- préparer un dataset médical tabulaire ;
+- traiter un problème de classification déséquilibrée ;
+- entraîner plusieurs modèles supervisés ;
+- créer une interface utilisateur simple ;
+- intégrer une couche d’explicabilité avec SHAP.
+
+---
+
+## Limites du projet
+
+Le projet présente plusieurs limites :
+
+- le dataset est de petite taille ;
+- la classe positive `Biopsy = 1` est fortement minoritaire ;
+- les prédictions dépendent fortement du prétraitement et du protocole de séparation train/test ;
+- le projet ne constitue pas une validation médicale ;
+- le modèle ne doit pas être utilisé comme outil clinique ;
+- certaines parties du code doivent être harmonisées avant une publication finale ;
+- le fichier `catboost.pkl` est mentionné dans l’application mais n’est pas présent dans le dossier `genModels/` ;
+- l’application cherche certaines images SHAP en `.jpg`, alors que les fichiers disponibles sont en `.png`.
+
+---
+
+## Améliorations possibles
+
+Les améliorations futures peuvent inclure :
+
+- corriger le nom du dépôt en remplaçant `assessement` par `assessment` ;
+- harmoniser les chemins relatifs pour rendre les scripts exécutables depuis la racine du projet ;
+- ajouter un fichier de configuration pour choisir le modèle à entraîner ;
+- sauvegarder également le scaler utilisé pendant l’entraînement ;
+- corriger ou retirer l’option CatBoost si le modèle n’est pas fourni ;
+- corriger les chemins des images SHAP dans l’application ;
+- ajouter des métriques détaillées : accuracy, precision, recall, F1-score et ROC-AUC ;
+- utiliser une validation croisée stratifiée ;
+- ajouter un rapport de classification et une matrice de confusion ;
+- améliorer l’organisation des dossiers ;
+- ajouter une page Streamlit dédiée à l’interprétabilité SHAP ;
+- ajouter des tests pour vérifier le bon chargement des modèles et des données ;
+- renforcer le disclaimer médical dans l’interface.
+
+---
+
+## Compétences mobilisées
+
+Ce projet met en évidence plusieurs compétences :
+
+- data cleaning ;
+- feature engineering ;
+- classification supervisée ;
+- gestion du déséquilibre des classes ;
+- SMOTE ;
+- Random Forest ;
+- Support Vector Machine ;
+- XGBoost ;
+- interprétabilité avec SHAP ;
+- développement d’application Streamlit ;
+- analyse de données médicales tabulaires ;
+- sauvegarde et chargement de modèles avec Joblib ;
+- communication de résultats de machine learning.
+
+---
+
+## Valeur académique
+
+Ce projet illustre une démarche complète de data science appliquée à un problème de classification tabulaire.
+
+Il montre comment passer d’un dataset brut à un prototype interactif intégrant :
+
+- la préparation des données ;
+- l’entraînement de modèles ;
+- le traitement du déséquilibre ;
+- la sauvegarde des modèles ;
+- l’interface utilisateur ;
+- l’interprétation des prédictions.
+
+Il est particulièrement adapté pour démontrer des compétences de base et intermédiaires en machine learning appliqué, Streamlit et explicabilité des modèles.
+
+---
+
+## Licence
+
+Le projet contient une licence GPL-3.0.
+
+---
+
+## Auteur
+
+Zakaria Es-Salmy
+
+Projet académique réalisé dans le cadre d’une Coding Week
+École Centrale Casablanca
